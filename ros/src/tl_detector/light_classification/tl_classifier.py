@@ -15,9 +15,9 @@ class TLClassifier(object):
 
         # path to seperately pre-trained detection model graphs
         SIM_MODEL_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-            'sim_ssd_mobilenet_v1_coco_11_06_2017-frozen_inference_graph.pb')
+            'sim_ssd_inception_v2_coco_2018_01_28_frozen_inference_graph.pb')
         SITE_MODEL_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-            'site_ssd_mobilenet_v1_coco_11_06_2017-frozen_inference_graph.pb')
+            'site_ssd_inception_v2_coco_2018_01_28_frozen_inference_graph.pb')
 
         self.is_site = is_site
         if is_site:
