@@ -3,11 +3,7 @@ import os
 import numpy as np
 import tensorflow as tf
 import cv2
-
-#SSD_MOBILENET_MODEL_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-#        '../../../../models/ssd_mobilenet_v1_sim_2019_04_06/frozen_inference_graph.pb')
-SIM_SSD_MODEL_FILE = '../../../../models/ssd_mobilenet_v1_sim_2019_04_06/frozen_inference_graph.pb'
-SITE_SSD_MODEL_FILE = '../../../../models/faster_rcnn_inception_v2_udacity_2019_04_11/frozen_inference_graph.pb')
+import rospy
 
 class TLClassifier(object):
     def __init__(self, is_site):
@@ -16,11 +12,20 @@ class TLClassifier(object):
 
         # Loading differently pre-trained traffic light detection models
         # for simulator and for test site
+
+        # path to seperately pre-trained detection model graphs
+        SIM_MODEL_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+            'sim_ssd_mobilenet_v1_coco_11_06_2017-frozen_inference_graph.pb')
+        SITE_MODEL_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+            'site_ssd_mobilenet_v1_coco_11_06_2017-frozen_inference_graph.pb')
+
         self.is_site = is_site
         if is_site:
-            self.detection_graph = self.load_graph(SITE_SSD_MODEL_FILE)
+            self.detection_graph = self.load_graph(SITE_MODEL_FILE)
+            rospy.loginfo("Site environment: {}".format(SITE_MODEL_FILE))
         else:
-            self.detection_graph = self.load_graph(SIM_SSD_MODEL_FILE)
+            self.detection_graph = self.load_graph(SIM_MODEL_FILE)
+            rospy.loginfo("Sim environment: {}".format(SIM_MODEL_FILE))
 
         # Extracting relevant tensors according to Udacity Object Classification Lab
         # `get_tensor_by_name` returns the Tensor with the associated name in the Graph.
@@ -36,63 +41,10 @@ class TLClassifier(object):
         # The classification of the object (integer id).
         self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
 
-    def get_classification(self, image):
-        """Determines the color of the traffic light in the image
-
-        Args:
-            image (cv::Mat): image containing the traffic light
-
-        Returns:
-            int: ID of traffic light color (specified in styx_msgs/TrafficLight)
-
-        """
-        #TODO implement light color prediction
-
-        # Following closely the Udacity Object Detection Lab
-
-        image_np = np.expand_dims(np.asarray(image, dtype=np.uint8), 0)
-
-        with tf.Session(graph=self.detection_graph) as sess:
-            # Actual detection.
-            (boxes, scores, classes) = self.sess.run([self.detection_boxes,
-                            self.detection_scores, self.detection_classes],
-                            feed_dict={self.image_tensor: image_np})
-
-            # Remove unnecessary dimensions
-            boxes = np.squeeze(boxes)
-            scores = np.squeeze(scores)
-            classes = np.squeeze(classes)
-
-            confidence_cutoff = 0.5
-            # Filter boxes with a confidence score less than `confidence_cutoff`
-            boxes, scores, classes = self.filter_boxes(confidence_cutoff, boxes, scores, classes)
-
-            # The current box coordinates are normalized to a range between 0 and 1.
-            # This converts the coordinates actual location on the image.
-            height, width = image.size
-            box_coords = self.to_image_coords(boxes, height, width)
-
-            if len(scores) == 0:
-                return TrafficLight.UNKNOWN
-            else:
-                scoreboard = {}
-                for idx in range(scores.size):
-                    if classes[idx] not in scoreboard:
-                        scoreboard[classes[idx]] = scores[idx]
-                    else:
-                        scoreboard[classes[idx]] += scores[idx]
-                label = max(scoreboard.iterkeys(), key=(lambda key: scoreboard[key]))
-                if label == 1:
-                    return TrafficLight.GREEN
-                elif label == 2:
-                    return TrafficLight.RED
-                elif label == 3:
-                    return TrafficLight.YELLOW
-                else:
-                    return TrafficLight.UNKNOWN
+        self.sess = tf.Session(graph=self.detection_graph)
 
     #
-    # Utility funcs from Udacity Object Detection Lab
+    # Adapted utility functions from Udacity Object Detection Lab
     #
 
     def filter_boxes(self, min_score, boxes, scores, classes):
@@ -133,3 +85,58 @@ class TLClassifier(object):
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
         return graph
+
+    def get_classification(self, image):
+        """Determines the color of the traffic light in the image
+
+        Args:
+            image (cv::Mat): image containing the traffic light
+
+        Returns:
+            int: ID of traffic light color (specified in styx_msgs/TrafficLight)
+
+        """
+        #TODO implement light color prediction
+
+        # Following closely the Udacity Object Detection Lab
+
+        image_np = np.expand_dims(np.asarray(image, dtype=np.uint8), 0)
+
+        with self.detection_graph.as_default():
+            # Actual detection.
+            (boxes, scores, classes) = self.sess.run([self.detection_boxes,
+                            self.detection_scores, self.detection_classes],
+                            feed_dict={self.image_tensor: image_np})
+
+            # Remove unnecessary dimensions
+            boxes = np.squeeze(boxes)
+            scores = np.squeeze(scores)
+            classes = np.squeeze(classes)
+
+            confidence_cutoff = 0.5
+            # Filter boxes with a confidence score less than `confidence_cutoff`
+            boxes, scores, classes = self.filter_boxes(confidence_cutoff, boxes, scores, classes)
+
+            # # The current box coordinates are normalized to a range between 0 and 1.
+            # # This converts the coordinates actual location on the image.
+            # height, width = image.shape[0], image.shape[1]
+            # box_coords = self.to_image_coords(boxes, height, width)
+
+            if len(scores) == 0:
+                return TrafficLight.UNKNOWN
+            else:
+                scoreboard = {}
+                for idx in range(scores.size):
+                    if classes[idx] not in scoreboard:
+                        scoreboard[classes[idx]] = scores[idx]
+                    else:
+                        scoreboard[classes[idx]] += scores[idx]
+                label = max(scoreboard.iterkeys(), key=(lambda key: scoreboard[key]))
+                if label == 1:
+                    return TrafficLight.GREEN
+                elif label == 2:
+                    return TrafficLight.RED
+                elif label == 3:
+                    return TrafficLight.YELLOW
+                else:
+                    return TrafficLight.UNKNOWN

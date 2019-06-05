@@ -25,6 +25,7 @@ class TLDetector(object):
         self.pose = None
         self.waypoints = None
         self.waypoints_2d = None
+        self.waypoints_tree = None
         self.camera_image = None
         self.lights = []
 
@@ -68,7 +69,7 @@ class TLDetector(object):
         if not self.waypoints_2d:
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] \
                                 for waypoint in waypoints.waypoints]
-            self.waypoint_tree = KDTree(self.waypoints_2d)
+            self.waypoints_tree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -83,6 +84,7 @@ class TLDetector(object):
         """
         self.has_image = True
         self.camera_image = msg
+
         light_wp, state = self.process_traffic_lights()
 
         '''
@@ -114,9 +116,7 @@ class TLDetector(object):
 
         """
         #TODO implement
-        x = self.pose.pose.position.x
-        y = self.pose.pose.position.y
-        closest_idx = self.waypoint_tree.query([x, y], 1)[1]
+        closest_idx = self.waypoints_tree.query([x, y], 1)[1]
 
         # Check if closest is ahead or behind vehicle
         closest_coord = self.waypoints_2d[closest_idx]
@@ -156,13 +156,14 @@ class TLDetector(object):
         light_state = self.light_classifier.get_classification(cv_image)
 
         if not self.is_site:
-            rospy.loginfo('Predicted state is %s, and real state is %s',
-                            light_states[light_state], light_states[light.state])
             if light_state != light.state:
-                rospy.logwarn('Predicted state is %s, and real state is %s',
-                            light_states[light_state], light_states[light.state])
+                rospy.logwarn("Predicted state is {}, and real state is {}"\
+                            .format(light_states[light_state], light_states[light.state]))
+            else:
+                rospy.loginfo("Predicted state is {}, and real state is {}"\
+                            .format(light_states[light_state], light_states[light.state]))
         else:
-            rospy.loginfo('Predicted state is %s', light_states[light_state])
+            rospy.loginfo("Predicted state is {}".format(light_states[light_state]))
 
         return light_state
 
