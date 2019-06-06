@@ -1,5 +1,29 @@
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
+### Reflection
+
+Unfortunately this is a single submission by me, Volker Brichzin. Joining a team didn't work out due to some reasons.
+
+The general code structure was described in the project introduction, here is a graphical summary:
+![code-structure](/imgs/code-structure.png)
+
+The code has three main parts: perception, planning and control.
+
+Perception: for classifying traffic lights in the simulator (and possible in the vehicle Carla on the Udacity test site) pre-trained detection models are used by loading the model graphs and reading out the scores of the trained classes. The class with the highest score is determined to be the detected light state. For the training of the models I took the liberty of using the [training data set](https://drive.google.com/file/d/0B-Eiyn-CUQtxdUZWMkFfQzdObUE/view) from [Anthony Sarkis](https://medium.com/@anthony_sarkis). This contains already labeled image sets for the simulator and Carla. The alternative would have been to record images (only possible in the simulator) and assign the correct labels with tool [LabelImg](https://github.com/tzutalin/labelImg).
+For the actual training a pipeline was used outside of this project that was making use of code from the [Udacity Object Detection Lab](https://github.com/udacity/CarND-Object-Detection-Lab) as well as the [Tensorflow Object Detection API](https://github.com/tensorflow/models/tree/master/research/object_detection). The training concluded in `frozen_inference_graph.pb` files that were loaded during the initialization of the `tl_detector` node and later used in the traffic light state classification.
+
+Planning: for the planning the main component is the `waypoint_updater.py` node that is responsible for selecting a predetermined number of waypoints ahead of the vehicle (`LOOKAHEAD_WPS`) that describe the desired route with the desired velocities. This information is then published to the `/final_waypoints` topic.
+The walkthroughs by Stephen and Aaron were very helpful in the implementation.
+
+Control: for controlling of the car in the simulator (or in the Carla vehicle) the `dbw_node.py` is responsible. Once receiving `/final_waypoints` messages, the vehicle's waypoint follower will publish twist commands to the `/twist_cmd` topic. The drive-by-wire node is the using these in controllers for throttle, brake and steering.
+Again, the walkthrough of Stephen and Aaron on this topic was very helpful for completing this.
+
+### Installation
+
+I had many issues in getting this installed and running locally as working in the workspace I didn't find so productive. And also running the VM was quite slow. I finally settled on a native linux installation, unfortunately on a fairly week PC so that testing in the simulator still showed quite some lagging.
+
+Below is the original instruction from Udacity for installation and getting things running.
+
 Please use **one** of the two installation options, either native **or** docker installation.
 
 ### Native Installation
