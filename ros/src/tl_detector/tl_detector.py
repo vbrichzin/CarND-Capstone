@@ -207,7 +207,10 @@ class TLDetector(object):
                     closest_light = light
                     line_wp_idx = temp_wp_idx
 
-        if closest_light:
+        if not self.is_site and closest_light:
+            state = self.get_light_state(closest_light)
+            return line_wp_idx, state
+        else: # to test if image recognition works with the ros bag file
             state = self.get_light_state(closest_light)
             return line_wp_idx, state
 

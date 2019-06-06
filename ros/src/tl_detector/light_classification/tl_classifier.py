@@ -60,20 +60,20 @@ class TLClassifier(object):
         filtered_classes = classes[idxs, ...]
         return filtered_boxes, filtered_scores, filtered_classes
 
-    def to_image_coords(self, boxes, height, width):
-        """
-        The original box coordinate output is normalized, i.e [0, 1].
-
-        This converts it back to the original coordinate based on the image
-        size.
-        """
-        box_coords = np.zeros_like(boxes)
-        box_coords[:, 0] = boxes[:, 0] * height
-        box_coords[:, 1] = boxes[:, 1] * width
-        box_coords[:, 2] = boxes[:, 2] * height
-        box_coords[:, 3] = boxes[:, 3] * width
-
-        return box_coords
+    # def to_image_coords(self, boxes, height, width):
+    #     """
+    #     The original box coordinate output is normalized, i.e [0, 1].
+    #
+    #     This converts it back to the original coordinate based on the image
+    #     size.
+    #     """
+    #     box_coords = np.zeros_like(boxes)
+    #     box_coords[:, 0] = boxes[:, 0] * height
+    #     box_coords[:, 1] = boxes[:, 1] * width
+    #     box_coords[:, 2] = boxes[:, 2] * height
+    #     box_coords[:, 3] = boxes[:, 3] * width
+    #
+    #     return box_coords
 
     def load_graph(self, graph_file):
         """Loads a frozen inference graph"""
